@@ -42,6 +42,11 @@ export interface NgMatchers extends jasmine.Matchers {
   toHaveCssClass(expected: string): boolean;
 
   /**
+   * Expect the element to have the given pairs of attribute name and attribute value
+   */
+  toHaveAttributes(expected: {[k: string]: string}): boolean;
+
+  /**
    * Expect the element to have the given CSS styles injected INLINE
    *
    * ## Example
@@ -148,25 +153,22 @@ export const customMatchers: jasmine.CustomMatcherFactories = {
     };
   },
 
-  toHaveStyle: function () {
+  toHaveAttributes: function() {
     return {
-      compare: function (actual: any, styles: { [k: string]: string } | string) {
-        let found = { }, computed = getComputedStyle(actual);
-        let allPassed: boolean = Object.keys(styles).length !== 0;
-        Object.keys(styles).forEach(prop => {
-          allPassed = allPassed && _.hasStyle(actual, prop, styles[prop], false);
-          if ( !allPassed ) {
-            found[prop] = computed.getPropertyValue(prop);
-          }
+      compare: function (actual: any, map: {[k: string]: string}) {
+        let allPassed: boolean;
+        let attributeNames = Object.keys(map);
+        allPassed = attributeNames.length !== 0;
+        attributeNames.forEach(name => {
+          allPassed = allPassed && _.hasAttribute(actual, name)
+          && _.getAttribute(actual, name) === map[name];
         });
-
         return {
           pass: allPassed,
           get message() {
-            const expectedValueStr = typeof styles === 'string' ? styles : JSON.stringify(styles);
             return `
-              Expected ${JSON.stringify(found)} ${!allPassed ? ' ' : 'not '} to contain the
-              CSS ${typeof styles === 'string' ? 'property' : 'styles'} '${expectedValueStr}'
+              Expected ${actual.outerHTML} ${allPassed ? 'not ' : ''} attributes to contain
+              '${JSON.stringify(map)}'
             `;
           }
         };
@@ -199,7 +201,35 @@ export const customMatchers: jasmine.CustomMatcherFactories = {
         };
       }
     };
+  },
+
+
+  toHaveStyle: function () {
+    return {
+      compare: function (actual: any, styles: { [k: string]: string } | string) {
+        let found = { }, computed = getComputedStyle(actual);
+        let allPassed: boolean = Object.keys(styles).length !== 0;
+        Object.keys(styles).forEach(prop => {
+          allPassed = allPassed && _.hasStyle(actual, prop, styles[prop], false);
+          if ( !allPassed ) {
+            found[prop] = computed.getPropertyValue(prop);
+          }
+        });
+
+        return {
+          pass: allPassed,
+          get message() {
+            const expectedValueStr = typeof styles === 'string' ? styles : JSON.stringify(styles);
+            return `
+              Expected ${JSON.stringify(found)} ${!allPassed ? ' ' : 'not '} to contain the
+              CSS ${typeof styles === 'string' ? 'property' : 'styles'} '${expectedValueStr}'
+            `;
+          }
+        };
+      }
+    };
   }
+
 };
 
 /**
