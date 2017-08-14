@@ -48,7 +48,7 @@ const SRCSET_URLS_MAP = {
 };
 const DEFAULT_SRC = 'https://dummyimage.com/300x300/c72538/ffffff.png';
 
-describe('srcset directive', () => {
+fdescribe('srcset directive', () => {
   let fixture: ComponentFixture<any>;
   let matchMedia: MockMatchMedia;
   let breakpoints: BreakPointRegistry;
@@ -57,10 +57,10 @@ describe('srcset directive', () => {
     fixture = makeCreateTestComponent(() => TestSrcsetComponent)(template);
 
     inject([MatchMedia, BreakPointRegistry],
-      (_matchMedia: MockMatchMedia, _breakpoints: BreakPointRegistry) => {
-      matchMedia = _matchMedia;
-      breakpoints = _breakpoints;
-    })();
+        (_matchMedia: MockMatchMedia, _breakpoints: BreakPointRegistry) => {
+          matchMedia = _matchMedia;
+          breakpoints = _breakpoints;
+        })();
   };
 
   beforeEach(() => {
@@ -75,6 +75,41 @@ describe('srcset directive', () => {
         {provide: MatchMedia, useClass: MockMatchMedia}
       ]
     });
+  });
+
+  it('should work without a <picture> wrapper element', () => {
+    const template = `
+            <img src="${DEFAULT_SRC}" srcset="${SRCSET_URLS_MAP['gt-xs'][0]}">
+      `;
+    componentWithTemplate(template);
+    fixture.detectChanges();
+
+    let sources = queryFor(fixture, 'source');
+    let pictures = queryFor(fixture, 'picture');
+
+    expect(sources.length).toBe(0);
+    expect(pictures.length).toBe(0);
+  });
+
+  it('should work with a bindable img.srcset', () => {
+    const template = `
+            <img src="${DEFAULT_SRC}" [srcset]="lgSrcSet">
+      `;
+    componentWithTemplate(template);
+    fixture.detectChanges();
+
+    let sources = queryFor(fixture, 'source');
+    let pictures = queryFor(fixture, 'picture');
+    let img = queryFor(fixture, 'img')[0].nativeElement;
+
+    expect(sources.length).toBe(0);
+    expect(pictures.length).toBe(0);
+    expect(img).toBeDefined();
+    expect(img).toHaveAttributes({
+      src : 'https://dummyimage.com/300x300/c72538/ffffff.png',
+      srcset : fixture.componentInstance.lgSrcSet
+    })
+
   });
 
   it('should work when no srcset flex-layout directive is used', () => {
@@ -126,7 +161,7 @@ describe('srcset directive', () => {
     componentWithTemplate(template);
     fixture.detectChanges();
 
-    const  nodes = queryFor(fixture, 'source');
+    const nodes = queryFor(fixture, 'source');
 
     expect(nodes.length).toBe(3);
     expect(nodes[0].nativeElement).toHaveAttributes({
@@ -144,7 +179,7 @@ describe('srcset directive', () => {
   });
 
   it('should update source elements srcset values when srcset input properties change', () => {
-      const template = `
+    const template = `
       <picture>
           <img  style="width:auto;"
                 src="${DEFAULT_SRC}"
@@ -179,7 +214,7 @@ describe('srcset directive', () => {
   });
 
   it('should work with overlapping breakpoints', () => {
-      const template = `
+    const template = `
       <picture>
           <img  style="width:auto;"
                 src="${DEFAULT_SRC}"
@@ -219,6 +254,7 @@ export class TestSrcsetComponent implements OnInit {
   xsSrcSet: string;
   mdSrcSet: string;
   lgSrcSet: string;
+
   constructor() {
     this.xsSrcSet = SRCSET_URLS_MAP['xs'][0];
     this.mdSrcSet = SRCSET_URLS_MAP['md'][0];

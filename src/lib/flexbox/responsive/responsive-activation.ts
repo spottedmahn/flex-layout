@@ -61,7 +61,7 @@ export class ResponsiveActivation {
    * important when several media queries are 'registered' and from which, the browser uses the
    * first matching media query.
    */
-  get registryFromLargest() {
+  get registryFromLargest():BreakPointX[] {
     return [...this._registryMap].reverse();
   }
 
