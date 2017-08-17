@@ -48,7 +48,7 @@ const SRCSET_URLS_MAP = {
 };
 const DEFAULT_SRC = 'https://dummyimage.com/300x300/c72538/ffffff.png';
 
-fdescribe('srcset directive', () => {
+describe('img-srcset directive', () => {
   let fixture: ComponentFixture<any>;
   let matchMedia: MockMatchMedia;
   let breakpoints: BreakPointRegistry;
@@ -79,8 +79,8 @@ fdescribe('srcset directive', () => {
 
   it('should work without a <picture> wrapper element', () => {
     const template = `
-            <img src="${DEFAULT_SRC}" srcset="${SRCSET_URLS_MAP['gt-xs'][0]}">
-      `;
+      <img src="${DEFAULT_SRC}" srcset="${SRCSET_URLS_MAP['gt-xs'][0]}">
+    `;
     componentWithTemplate(template);
     fixture.detectChanges();
 
@@ -91,10 +91,24 @@ fdescribe('srcset directive', () => {
     expect(pictures.length).toBe(0);
   });
 
-  it('should work with a bindable img.srcset', () => {
+  it('should preserve the static img.srcset attribute', () => {
     const template = `
-            <img src="${DEFAULT_SRC}" [srcset]="lgSrcSet">
-      `;
+      <img srcset="https://dummyimage.com/300x300/c72538/ffffff.png">
+    `;
+    componentWithTemplate(template);
+    fixture.detectChanges();
+
+    const img = queryFor(fixture, 'img')[0].nativeElement;
+    expect(img).toHaveAttributes({
+      srcset: 'https://dummyimage.com/300x300/c72538/ffffff.png'
+    });
+
+  });
+
+  it('should preserve bindable img.srcset attribute', () => {
+    const template = `
+       <img src="${DEFAULT_SRC}" [srcset]="lgSrcSet">
+    `;
     componentWithTemplate(template);
     fixture.detectChanges();
 
@@ -106,13 +120,12 @@ fdescribe('srcset directive', () => {
     expect(pictures.length).toBe(0);
     expect(img).toBeDefined();
     expect(img).toHaveAttributes({
-      src : 'https://dummyimage.com/300x300/c72538/ffffff.png',
-      srcset : fixture.componentInstance.lgSrcSet
-    })
-
+      src: 'https://dummyimage.com/300x300/c72538/ffffff.png',
+      srcset: fixture.componentInstance.lgSrcSet
+    });
   });
 
-  it('should work when no srcset flex-layout directive is used', () => {
+  it('should work when no "srcset" directive is used', () => {
     const template = `
         <picture>
           <img style="width:auto;" src="${DEFAULT_SRC}" >
@@ -129,7 +142,7 @@ fdescribe('srcset directive', () => {
     expect(_.tagName(_.lastElementChild(pictureElt))).toEqual('IMG');
   });
 
-  it('should keep img as the last child tag of <picture> after source tags injection', () => {
+  it('should keep img as the last child tag of <picture>', () => {
     const template = `
       <div>
         <picture>
@@ -239,6 +252,80 @@ fdescribe('srcset directive', () => {
       srcset: `${SRCSET_URLS_MAP['xs'][0]}`,
       media: breakpoints.findByAlias('xs').mediaQuery
     });
+  });
+
+  describe('with responsive api', () => {
+
+    it('should work with a isolated image element and responsive srcset(s)', () => {
+      componentWithTemplate(`
+        <img [srcset]="xsSrcSet"
+             [srcset.md]="mdSrcSet">
+      `);
+
+      let img = queryFor(fixture, 'img')[0].nativeElement;
+
+      matchMedia.activate('md');
+      fixture.detectChanges();
+      expect(img).toBeDefined();
+      expect(img).toHaveAttributes({
+        src: fixture.componentInstance.mdSrcSet
+      });
+
+      // When activating an unused breakpoint, fallback to default [srcset] value
+      matchMedia.activate('xl');
+      fixture.detectChanges();
+      expect(img).toHaveAttributes({
+        src: fixture.componentInstance.xsSrcSet
+      });
+    });
+
+    it('should work use [src] if default [srcset] is not defined', () => {
+      componentWithTemplate(`
+         <img src="${DEFAULT_SRC}"
+              [srcset.md]="mdSrcSet">
+       `);
+       fixture.detectChanges();
+       let img = queryFor(fixture, 'img')[0].nativeElement;
+
+       matchMedia.activate('md');
+       fixture.detectChanges();
+
+       expect(img).toBeDefined();
+       expect(img).toHaveAttributes({
+         src: fixture.componentInstance.mdSrcSet
+       });
+
+       // When activating an unused breakpoint, fallback to default [srcset] value
+       matchMedia.activate('xl');
+       fixture.detectChanges();
+       expect(img).toHaveAttributes({
+         src: DEFAULT_SRC
+       });
+     });
+
+    fit('should work with lookup from `src` when the default `srcset` is not defined', () => {
+         componentWithTemplate(`
+              <picture>
+                <img  src="https://dummyimage.com/400x200/c7c224/000.png&text=default"
+                      srcset.md="https://dummyimage.com/500x200/76c720/fff.png&text=md">
+            </picture>            
+          `);
+          matchMedia.activate('md');
+          fixture.detectChanges();
+
+          let sources = queryFor(fixture, 'source');
+          let defaultSourceEl = sources[sources.length-1].nativeElement;
+          expect(defaultSourceEl).toHaveAttributes({
+            srcset: 'https://dummyimage.com/500x200/76c720/fff.png&text=md'
+          });
+
+          // When activating an unused breakpoint, fallback to default [srcset] value
+          matchMedia.activate('xs');
+          fixture.detectChanges();
+          expect(defaultSourceEl).toHaveAttributes({
+            srcset: 'https://dummyimage.com/400x200/c7c224/000.png&text=default'
+          });
+        });
   });
 });
 
