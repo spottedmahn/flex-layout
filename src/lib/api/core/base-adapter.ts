@@ -73,7 +73,9 @@ export class BaseFxDirectiveAdapter extends BaseFxDirective {
     } else if (typeof source === 'string') {
       this._cacheInputString(key, source);
     } else {
-      throw new Error('Invalid class value provided. Did you want to cache the raw value?');
+      throw new Error(
+        `Invalid class value '${key}' provided. Did you want to cache the raw value?`
+      );
     }
   }
 
@@ -123,5 +125,18 @@ export class BaseFxDirectiveAdapter extends BaseFxDirective {
    */
   protected _cacheInputString(key = '', source?: string) {
     this._inputMap[key] = source;
+  }
+
+  /**
+   * Does this directive have 1 or more responsive keys defined
+   * Note: we exclude the 'baseKey' key (which is NOT considered responsive)
+   */
+  public get usesResponsiveAPI() {
+    const numKeys = Object.keys(this._inputMap).length;
+    let hasKeys = numKeys > 0;
+    if ((numKeys == 1) && !!this._inputMap[this._baseKey]) {
+      hasKeys = false;
+    }
+    return hasKeys;
   }
 }
